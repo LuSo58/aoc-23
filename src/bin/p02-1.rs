@@ -1,6 +1,7 @@
 use std::cmp::Ordering;
 use std::io::stdin;
 use std::str::FromStr;
+use std::time::Instant;
 
 #[derive(Debug)]
 struct Game {
@@ -84,6 +85,7 @@ impl FromStr for Round {
 }
 
 fn main() {
+    let start = Instant::now();
     let ref_round = Round {
         red: 12,
         green: 13,
@@ -100,5 +102,7 @@ fn main() {
             None
         }
     }).flatten()).sum::<u32>();
+    let time = start.elapsed();
     println!("{id_sum}");
+    println!("{}ns", time.as_nanos());
 }

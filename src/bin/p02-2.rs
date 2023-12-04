@@ -1,6 +1,7 @@
 use std::cmp::Ordering;
 use std::io::stdin;
 use std::str::FromStr;
+use std::time::Instant;
 
 #[derive(Debug)]
 struct Game {
@@ -98,6 +99,7 @@ impl Round {
 }
 
 fn main() {
+    let start = Instant::now();
     let power_sum = stdin().lines().map(|line| line.map(|line| {
         Game::from_str(line.as_str()).ok()
     }).ok().flatten()).filter_map(|game| game.map(|game| {
@@ -105,5 +107,7 @@ fn main() {
             acc.maximum(&round)
         }).power()
     })).sum::<u32>();
+    let time = start.elapsed();
     println!("{power_sum}");
+    println!("{}ns", time.as_nanos());
 }

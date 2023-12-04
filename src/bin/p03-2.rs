@@ -1,9 +1,11 @@
 use std::cmp::Ordering;
 use std::io::stdin;
+use std::time::Instant;
 use itertools::Itertools;
 use once_cell::unsync::Lazy;
 
 fn main() {
+    let start = Instant::now();
     let input = stdin().lines().map(|line| line.map(String::into_bytes)).collect::<Result<Vec<_>, _>>().expect("Bad input - Error while reading");
     let width = input.first().map(Vec::len).expect("Bad input - Empty input");
     assert!(input.iter().all(|line| line.len() == width));
@@ -67,5 +69,7 @@ fn main() {
             }
         }).flatten()
     }).sum::<u32>();
+    let time = start.elapsed();
     println!("{sum}");
+    println!("{}ns", time.as_nanos());
 }

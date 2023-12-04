@@ -1,6 +1,7 @@
 use std::cell::OnceCell;
 use std::collections::HashMap;
 use std::io::stdin;
+use std::time::Instant;
 use regex::Regex;
 
 fn parse<S>(v: S) -> u32 where S: AsRef<str> {
@@ -15,6 +16,7 @@ fn parse<S>(v: S) -> u32 where S: AsRef<str> {
 }
 
 fn main() {
+    let start = Instant::now();
     let map = [("one", 1), ("two", 2), ("three", 3), ("four", 4), ("five", 5), ("six", 6), ("seven", 7), ("eight", 8), ("nine", 9)].into_iter().collect::<HashMap<_, _>>();
     let re_first = Regex::new(r"one|two|three|four|five|six|seven|eight|nine|[1-9]").expect("infallible");
     let re_last = Regex::new(r"(.*)(one|two|three|four|five|six|seven|eight|nine|[1-9])").expect("infallible");
@@ -28,4 +30,6 @@ fn main() {
             _ => None,
         }
     }).ok().flatten()).sum::<Option<u32>>().map(|result| println!("{result}"));
+    let time = start.elapsed();
+    println!("{}ns", time.as_nanos());
 }

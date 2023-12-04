@@ -1,8 +1,10 @@
 use std::collections::{HashSet, VecDeque};
 use std::io::stdin;
 use std::iter::repeat;
+use std::time::Instant;
 
 fn main() {
+    let start = Instant::now();
     let sum = stdin()
         .lines()
         .map(|line| {
@@ -42,5 +44,7 @@ fn main() {
                 .for_each(|forward_duplicate| *forward_duplicate += cards);
             (total_cards + cards, forward_winnings)
         }).0;
+    let time = start.elapsed();
     println!("{sum}");
+    println!("{}ns", time.as_nanos());
 }

@@ -1,7 +1,9 @@
 use std::collections::HashSet;
 use std::io::stdin;
+use std::time::Instant;
 
 fn main() {
+    let start = Instant::now();
     let sum = stdin()
         .lines()
         .map(|line| {
@@ -37,5 +39,7 @@ fn main() {
                 }
             }).expect("Failed reading from input")
         }).sum::<u32>();
+    let time = start.elapsed();
     println!("{sum}");
+    println!("{}ns", time.as_nanos());
 }
