@@ -1,14 +1,14 @@
 use std::collections::{HashSet, VecDeque};
 use std::io::stdin;
 use std::iter::repeat;
-use std::time::Instant;
+use aoc23::run;
 
 fn main() {
-    let start = Instant::now();
-    let sum = stdin()
-        .lines()
-        .map(|line| {
-            line.map(|line| {
+    run!({
+        let winning_counts = stdin()
+            .lines()
+            .map(|line| {
+                let line = line.unwrap();
                 match line.split_once(':') {
                     Some((_, numbers)) => {
                         match numbers.split_once('|') {
@@ -33,18 +33,25 @@ fn main() {
                     }
                     None => panic!("Bad input: semicolon")
                 }
-            }).expect("Failed reading from input")
-        })
-        .fold((0, VecDeque::new()), |(total_cards, mut forward_winnings), numbers_won| {
-            let cards = forward_winnings.pop_front().unwrap_or(0usize) + 1;
-            forward_winnings.extend(repeat(0).take(numbers_won.saturating_sub(forward_winnings.len())));
-            forward_winnings
-                .iter_mut()
-                .take(numbers_won)
-                .for_each(|forward_duplicate| *forward_duplicate += cards);
-            (total_cards + cards, forward_winnings)
-        }).0;
-    let time = start.elapsed();
-    println!("{sum}");
-    println!("{}ns", time.as_nanos());
+            }).collect::<Vec<_>>();
+        let points = winning_counts.iter()
+            .map(|winnings| {
+                match winnings {
+                    0 => 0,
+                    1.. => 1 << (winnings - 1),
+                    _ => panic!("Impossible: negative usize")
+                }
+            }).sum::<usize>();
+        let cards = winning_counts.into_iter()
+            .fold((0, VecDeque::new()), |(total_cards, mut forward_winnings), numbers_won| {
+                let cards = forward_winnings.pop_front().unwrap_or(0usize) + 1;
+                forward_winnings.extend(repeat(0).take(numbers_won.saturating_sub(forward_winnings.len())));
+                forward_winnings
+                    .iter_mut()
+                    .take(numbers_won)
+                    .for_each(|forward_duplicate| *forward_duplicate += cards);
+                (total_cards + cards, forward_winnings)
+            }).0;
+        (points, cards)
+    })
 }

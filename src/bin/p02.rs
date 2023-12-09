@@ -1,7 +1,7 @@
 use std::cmp::Ordering;
 use std::io::stdin;
 use std::str::FromStr;
-use std::time::Instant;
+use aoc23::run;
 
 #[derive(Debug)]
 struct Game {
@@ -99,15 +99,29 @@ impl Round {
 }
 
 fn main() {
-    let start = Instant::now();
-    let power_sum = stdin().lines().map(|line| line.map(|line| {
-        Game::from_str(line.as_str()).ok()
-    }).ok().flatten()).filter_map(|game| game.map(|game| {
-        game.rounds.into_iter().fold(Round::default(), |acc, round| {
-            acc.maximum(&round)
-        }).power()
-    })).sum::<u32>();
-    let time = start.elapsed();
-    println!("{power_sum}");
-    println!("{}ns", time.as_nanos());
+    run!({
+        let ref_round = Round {
+            red: 12,
+            green: 13,
+            blue: 14,
+        };
+        let rounds = stdin().lines().map(|line| line.map(|line| {
+            Game::from_str(line.as_str()).ok()
+        }).ok().flatten()).collect::<Vec<_>>();
+        let sum1 = rounds.iter().filter_map(|game| game.as_ref().map(|game| {
+            if game.rounds.iter().all(|round| {
+                ref_round >= *round
+            }) {
+                Some(game.id)
+            } else {
+                None
+            }
+        }).flatten()).sum::<u32>();
+        let sum2 = rounds.into_iter().filter_map(|game| game.map(|game| {
+            game.rounds.into_iter().fold(Round::default(), |acc, round| {
+                acc.maximum(&round)
+            }).power()
+        })).sum::<u32>();
+        (sum1, sum2)
+    });
 }
