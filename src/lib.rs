@@ -1,6 +1,7 @@
 use std::fmt::Debug;
 use std::io::stdin;
 use std::ops::{Index, IndexMut, Sub};
+use std::str::FromStr;
 use itertools::Itertools;
 use crate::Direction::{East, North, South, West};
 #[macro_export]
@@ -28,6 +29,34 @@ impl Direction {
         match self {
             North | South => (East, West),
             East | West => (North, South),
+        }
+    }
+}
+
+impl TryFrom<char> for Direction {
+    type Error = char;
+    fn try_from(value: char) -> Result<Self, Self::Error> {
+        match value {
+            'L' | 'W' => Ok(West),
+            'R' | 'E' => Ok(East),
+            'U' | 'N' => Ok(North),
+            'D' | 'S' => Ok(South),
+            _ => Err(value),
+        }
+    }
+}
+
+impl FromStr for Direction {
+    type Err = ();
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if s.len() != 1 {
+            Err(())
+        } else {
+            s.chars()
+                .next()
+                .expect("Infallible")
+                .try_into()
+                .map_err(|_| ())
         }
     }
 }
