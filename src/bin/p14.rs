@@ -1,17 +1,14 @@
-use std::io::stdin;
-use itertools::Itertools;
 use num::range_step_inclusive;
-use aoc23::run;
+use aoc23::{Grid, Coord, run, some, stdin_lines, xy};
 
-fn calculate_load(grid: &Vec<Vec<char>>) -> usize {
-    let height = grid.len();
+fn calculate_load(grid: &Grid<char>) -> usize {
     grid.iter()
         .enumerate()
         .map(|(y, line)| {
             line.iter()
                 .map(move |&c| {
                     if c == 'O' {
-                        height - y
+                        grid.height() - y
                     } else {
                         0
                     }
@@ -21,19 +18,17 @@ fn calculate_load(grid: &Vec<Vec<char>>) -> usize {
         .sum::<usize>()
 }
 
-fn tilt_vertical(grid: &mut Vec<Vec<char>>, north: bool) {
-    let height = grid.len();
-    let width = grid[0].len();
+fn tilt_vertical(grid: &mut Grid<char>, north: bool) {
     let ys = if north {
-        range_step_inclusive(height as isize - 1, 0, -1)
+        range_step_inclusive(grid.height() as isize - 1, 0, -1)
     } else {
-        range_step_inclusive(0, height as isize - 1, 1)
+        range_step_inclusive(0, grid.height() as isize - 1, 1)
     };
-    for x in 0..width {
+    for x in 0..grid.width() {
         let mut count = 0usize;
         for y in ys.clone() {
             let y = y as usize;
-            match grid[y][x] {
+            match grid[xy!(x, y)] {
                 '#' => {
                     for i in 0..count {
                         let y = if north {
@@ -41,12 +36,12 @@ fn tilt_vertical(grid: &mut Vec<Vec<char>>, north: bool) {
                         } else {
                             y - (i + 1)
                         };
-                        grid[y][x] = 'O';
+                        grid[xy!(x, y)] = 'O';
                     }
                     count = 0;
                 }
                 'O' => {
-                    grid[y][x] = '.';
+                    grid[xy!(x, y)] = '.';
                     count += 1;
                 }
                 _ => {}
@@ -56,28 +51,26 @@ fn tilt_vertical(grid: &mut Vec<Vec<char>>, north: bool) {
             let ys = if north {
                 range_step_inclusive(0, count - 1, 1)
             } else {
-                range_step_inclusive(height - count, height - 1, 1)
+                range_step_inclusive(grid.height() - count, grid.height() - 1, 1)
             };
             for i in ys {
-                grid[i][x] = 'O';
+                grid[xy!(x, i)] = 'O';
             }
         }
     }
 }
 
-fn tilt_horizontal(grid: &mut Vec<Vec<char>>, west: bool) {
-    let height = grid.len();
-    let width = grid[0].len();
+fn tilt_horizontal(grid: &mut Grid<char>, west: bool) {
     let xs = if west {
-        range_step_inclusive(width as isize - 1, 0, -1)
+        range_step_inclusive(grid.width() as isize - 1, 0, -1)
     } else {
-        range_step_inclusive(0, width as isize - 1, 1)
+        range_step_inclusive(0, grid.width() as isize - 1, 1)
     };
-    for y in 0..height {
+    for y in 0..grid.height() {
         let mut count = 0usize;
         for x in xs.clone() {
             let x = x as usize;
-            match grid[y][x] {
+            match grid[xy!(x, y)] {
                 '#' => {
                     for i in 0..count {
                         let x = if west {
@@ -85,12 +78,12 @@ fn tilt_horizontal(grid: &mut Vec<Vec<char>>, west: bool) {
                         } else {
                             x - (i + 1)
                         };
-                        grid[y][x] = 'O';
+                        grid[xy!(x, y)] = 'O';
                     }
                     count = 0;
                 }
                 'O' => {
-                    grid[y][x] = '.';
+                    grid[xy!(x, y)] = '.';
                     count += 1;
                 }
                 _ => {}
@@ -100,10 +93,10 @@ fn tilt_horizontal(grid: &mut Vec<Vec<char>>, west: bool) {
             let xs = if west {
                 range_step_inclusive(0, count - 1, 1)
             } else {
-                range_step_inclusive(width - count, width - 1, 1)
+                range_step_inclusive(grid.width() - count, grid.width() - 1, 1)
             };
             for i in xs {
-                grid[y][i] = 'O';
+                grid[xy!(i, y)] = 'O';
             }
         }
     }
@@ -120,21 +113,12 @@ fn print_grid(grid: &Vec<Vec<char>>) {
 
 fn main() {
     run!({
-        let grid = stdin().lines()
-            .map(|line| {
-                let line = line.expect("Bad input");
-                line.chars()
-                    .collect_vec()
-            })
-            .collect_vec();
-        assert!(!grid.is_empty());
-        assert!(!grid[0].is_empty());
-        assert!(grid.iter().map(Vec::len).all_equal());
+        let grid = Grid::from_input(stdin_lines(), some).expect("Bad input");
         let mut tilted_grid = grid.clone();
         tilt_vertical(&mut tilted_grid, true);
         let load = calculate_load(&tilted_grid);
         let mut rotating_grid = grid;
-        let mut rotating_grid_past: Vec<Vec<Vec<char>>> = vec![];
+        let mut rotating_grid_past: Vec<Grid<char>> = vec![];
         let limit = 1000000000usize;
         for i in 0..limit {
             tilt_vertical(&mut rotating_grid, true);

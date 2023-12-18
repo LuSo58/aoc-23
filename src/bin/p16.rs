@@ -1,11 +1,11 @@
 use std::collections::VecDeque;
 use std::convert::identity;
-use std::io::stdin;
 use std::mem::swap;
 use itertools::Itertools;
 use rayon::prelude::*;
-use aoc23::run;
+use aoc23::{Coord, Direction, Grid, run, stdin_lines, xy};
 
+#[derive(Copy, Clone)]
 enum Cell {
     Empty,
     RightMirror,
@@ -55,63 +55,31 @@ impl CellBeams {
     }
 }
 
-#[derive(Copy, Clone)]
-enum Direction {
-    North,
-    East,
-    South,
-    West,
-}
-
-impl Direction {
-    fn apply_cell(&self, cell: &Cell) -> (Self, Option<Self>) {
-        match cell {
-            Cell::Empty => (*self, None),
-            Cell::RightMirror => (match self {
+impl Cell {
+    fn translate_direction(&self, direction: &Direction) -> (Direction, Option<Direction>) {
+        match self {
+            Cell::Empty => (*direction, None),
+            Cell::RightMirror => (match direction {
                 Direction::North => Direction::East,
                 Direction::East => Direction::North,
                 Direction::South => Direction::West,
                 Direction::West => Direction::South,
             }, None),
-            Cell::LeftMirror => (match self {
+            Cell::LeftMirror => (match direction {
                 Direction::North => Direction::West,
                 Direction::East => Direction::South,
                 Direction::South => Direction::East,
                 Direction::West => Direction::North,
             }, None),
-            Cell::HorizontalSplitter => match self {
+            Cell::HorizontalSplitter => match direction {
                 Direction::North | Direction::South => (Direction::West, Some(Direction::East)),
-                _ => (*self, None),
+                _ => (*direction, None),
             }
-            Cell::VerticalSplitter => match self {
+            Cell::VerticalSplitter => match direction {
                 Direction::West | Direction::East => (Direction::North, Some(Direction::South)),
-                _ => (*self, None),
+                _ => (*direction, None),
             }
         }
-    }
-}
-
-struct Coord {
-    x: usize,
-    y: usize,
-}
-
-impl Coord {
-    fn new(x: usize, y: usize) -> Self {
-        Self { x, y }
-    }
-
-    fn next(&self, direction: Direction) -> Option<Self> {
-        match direction {
-            Direction::North => if self.y > 0 { Some(Self::new(self.x, self.y - 1)) } else { None }
-            Direction::East => Some(Self::new(self.x + 1, self.y)),
-            Direction::South => Some(Self::new(self.x, self.y + 1)),
-            Direction::West => if self.x > 0 { Some(Self::new(self.x - 1, self.y)) } else { None }
-        }
-    }
-
-    fn next_xy(x: usize, y: usize, direction: Direction) -> Option<Self> {
-        Coord::new(x, y).next(direction)
     }
 }
 
@@ -132,23 +100,21 @@ fn print_cell_beams(beams: &Vec<Vec<CellBeams>>) {
     println!();
 }
 
-fn energize_grid(grid: &Vec<Vec<Cell>>, start_coord: Coord, start_direction: Direction) -> Vec<Vec<CellBeams>> {
-    let width = grid[0].len();
-    let height = grid.len();
-    let mut beams = vec![vec![CellBeams::default(); width]; height];
+fn energize_grid(grid: &Grid<Cell>, start_coord: Coord, start_direction: Direction) -> Grid<CellBeams> {
+    let mut beams = Grid::<CellBeams>::new(grid.width(), grid.height());
     let mut prev_directions = VecDeque::new();
     let mut next_directions = VecDeque::new();
     next_directions.push_back((start_coord, start_direction));
     while !next_directions.is_empty() {
         swap(&mut prev_directions, &mut next_directions);
         while let Some((Coord { x, y }, direction)) = prev_directions.pop_back() {
-            if beams[y][x].append(direction) {
-                let (first, second) = direction.apply_cell(&grid[y][x]);
+            if beams[xy!(x, y)].append(direction) {
+                let (first, second) = grid[xy!(x, y)].translate_direction(&direction);
                 [Some(first), second].into_iter()
                     .filter_map(identity)
                     .for_each(|direction| {
                         Coord::next_xy(x, y, direction).map(|next| {
-                            if next.x < width && next.y < height {
+                            if next.x < grid.width() && next.y < grid.height() {
                                 next_directions.push_back((next, direction));
                             }
                         });
@@ -159,7 +125,7 @@ fn energize_grid(grid: &Vec<Vec<Cell>>, start_coord: Coord, start_direction: Dir
     beams
 }
 
-fn count_energized_cells(beams: &Vec<Vec<CellBeams>>) -> usize {
+fn count_energized_cells(beams: &Grid<CellBeams>) -> usize {
     beams.iter()
         .map(|row| {
             row.iter()
@@ -172,28 +138,15 @@ fn count_energized_cells(beams: &Vec<Vec<CellBeams>>) -> usize {
 
 fn main() {
     run!({
-        let grid = stdin().lines()
-            .map(|line| {
-                let line = line.expect("Bad input");
-                line.chars()
-                    .map(<char as TryInto<Cell>>::try_into)
-                    .collect::<Result<Vec<_>, _>>()
-                    .expect("Bad input")
-            })
-            .collect_vec();
-        assert!(!grid.is_empty());
-        assert!(!grid[0].is_empty());
-        assert!(grid.iter().map(Vec::len).all_equal());
-        let width = grid[0].len();
-        let height = grid.len();
+        let grid = Grid::from_input(stdin_lines(), |c| c.try_into().ok()).expect("Bad input");
         let first = count_energized_cells(&energize_grid(&grid, Coord::new(0, 0), Direction::East));
-        let entrypoints = (0..width)
+        let entrypoints = (0..grid.width())
             .map(|x| {
-                [(0, Direction::South), (height - 1, Direction::North)].into_iter()
+                [(0, Direction::South), (grid.height() - 1, Direction::North)].into_iter()
                     .map(move |(y, direction)| (Coord::new(x, y), direction))
             }).flatten()
-            .chain((0..height).map(|y| {
-                [(0, Direction::East), (width - 1, Direction::West)].into_iter()
+            .chain((0..grid.height()).map(|y| {
+                [(0, Direction::East), (grid.width() - 1, Direction::West)].into_iter()
                     .map(move |(x, direction)| (Coord::new(x, y), direction))
             })
             .flatten())

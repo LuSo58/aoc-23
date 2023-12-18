@@ -1,7 +1,7 @@
 use std::io::stdin;
 use std::iter::zip;
 use itertools::Itertools;
-use aoc23::run;
+use aoc23::{Grid, run, some};
 
 fn main() {
     run!({
@@ -13,25 +13,22 @@ fn main() {
                 if empty {
                     None
                 } else {
-                    let grid = group.map(|line| line.chars().collect_vec()).collect_vec();
-                    assert!(!grid.is_empty());
-                    assert!(grid.iter().map(Vec::len).all_equal());
-                    Some(grid)
+                    Some(Grid::from_input(group, some))
                 }
             })
-            .collect_vec();
+            .collect::<Option<Vec<_>>>()
+            .expect("Bad input");
         let sum_perfect = grids.iter()
             .map(|grid| {
-                let width = grid[0].len();
-                if let Some(row_axis) = (1..grid.len()).find(|&y| {
-                    zip((0..y).rev(), y..grid.len())
+                if let Some(row_axis) = (1..grid.height()).find(|&y| {
+                    zip((0..y).rev(), y..grid.height())
                         .all(|(y1, y2)| {
-                            grid[y1] == grid[y2]
+                            grid.row(y1) == grid.row(y2)
                         })
                 }) {
                     row_axis * 100
-                } else if let Some(col_axis) = (1..width).find(|&x| {
-                    zip((0..x).rev(), x..width)
+                } else if let Some(col_axis) = (1..grid.width()).find(|&x| {
+                    zip((0..x).rev(), x..grid.width())
                         .all(|(x1, x2)| {
                             grid.iter()
                                 .all(|line| {
@@ -47,17 +44,16 @@ fn main() {
             .sum::<usize>();
         let sum_smudge = grids.into_iter()
             .map(|grid| {
-                let width = grid[0].len();
-                if let Some(row_axis) = (1..grid.len()).find(|&y| {
-                    zip((0..y).rev(), y..grid.len())
+                if let Some(row_axis) = (1..grid.height()).find(|&y| {
+                    zip((0..y).rev(), y..grid.height())
                         .map(|(y1, y2)| {
-                            zip(&grid[y1], &grid[y2]).filter(|(&lhs, &rhs)| lhs != rhs).count()
+                            zip(grid.row(y1), grid.row(y2)).filter(|(&lhs, &rhs)| lhs != rhs).count()
                         })
                         .sum::<usize>() == 1
                 }) {
                     row_axis * 100
-                } else if let Some(col_axis) = (1..width).find(|&x| {
-                    zip((0..x).rev(), x..width)
+                } else if let Some(col_axis) = (1..grid.width()).find(|&x| {
+                    zip((0..x).rev(), x..grid.width())
                         .map(|(x1, x2)| {
                             grid.iter()
                                 .map(|line| {

@@ -1,31 +1,10 @@
 use std::collections::{HashMap, HashSet};
 use std::convert::identity;
-use std::io::stdin;
 use std::iter::zip;
 use std::ops::BitXor;
 use itertools::Itertools;
-use aoc23::run;
-
-#[derive(Debug, Default, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
-struct Coord {
-    x: usize,
-    y: usize,
-}
-
-impl Coord {
-    fn new(x: usize, y: usize) -> Self {
-        Self {
-            x,
-            y,
-        }
-    }
-}
-
-impl From<(usize, usize)> for Coord {
-    fn from(value: (usize, usize)) -> Self {
-        Self::new(value.0, value.1)
-    }
-}
+use aoc23::{Grid, xy, run, some, stdin_lines};
+use aoc23::Coord;
 
 #[derive(Debug, Default, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
 struct Node {
@@ -42,14 +21,10 @@ impl Node {
     }
 }
 
-fn get(grid: &Vec<Vec<char>>, x: usize, y: usize) -> char {
-    grid[y][x]
-}
-
 #[allow(unused)]
-fn print_path(grid: &Vec<Vec<char>>, path: &Vec<((Coord, Coord), (Coord, Coord))>) {
+fn print_path(grid: &Grid<char>, path: &Vec<((Coord, Coord), (Coord, Coord))>) {
     let path = path.iter().cloned().map(|((a, b), (c, d))| [a, b, c, d].into_iter()).flatten().collect::<HashSet<_>>();
-    grid.into_iter()
+    grid.iter()
         .enumerate()
         .map(|(y, line)| {
             line.into_iter()
@@ -69,13 +44,7 @@ fn print_path(grid: &Vec<Vec<char>>, path: &Vec<((Coord, Coord), (Coord, Coord))
 
 fn main() {
     run!({
-        let grid = stdin().lines()
-            .map(|line| {
-                let line = line.unwrap();
-                line.chars().collect_vec()
-            })
-            .collect_vec();
-        assert!(grid.iter().map(Vec::len).all_equal());
+        let grid = Grid::from_input(stdin_lines(), some).expect("Bad input");
         let mut start = None;
         let graph = grid.iter()
             .enumerate()
@@ -99,19 +68,19 @@ fn main() {
                                     let mut down = false;
                                     let mut left = false;
                                     let mut right = false;
-                                    if x > 0 && ['F', 'L', '-'].contains(&get(&grid, x - 1, y)) {
+                                    if x > 0 && ['F', 'L', '-'].contains(&grid[xy!(x - 1, y)]) {
                                         neightbours.push((x - 1, y));
                                         left = true;
                                     }
-                                    if ['7', 'J', '-'].contains(&get(&grid, x + 1, y)) {
+                                    if ['7', 'J', '-'].contains(&grid[xy!(x + 1, y)]) {
                                         neightbours.push((x + 1, y));
                                         right = true;
                                     }
-                                    if y > 0 && ['F', '7', '|'].contains(&get(&grid, x, y - 1)) {
+                                    if y > 0 && ['F', '7', '|'].contains(&grid[xy!(x, y - 1)]) {
                                         neightbours.push((x, y - 1));
                                         up = true
                                     }
-                                    if ['L', 'J', '|'].contains(&get(&grid, x, y + 1)) {
+                                    if ['L', 'J', '|'].contains(&grid[xy!(x, y + 1)]) {
                                         neightbours.push((x, y + 1));
                                         down = true;
                                     }
@@ -178,7 +147,7 @@ fn main() {
                     .enumerate()
                     .map({
                         let path_nodes = &path_nodes;
-                        move |(x, c)| {
+                        move |(x, &c)| {
                             if c == 'S' {
                                 start_symbol
                             } else if path_nodes.contains(&(x, y).into()) {
