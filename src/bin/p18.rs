@@ -1,14 +1,21 @@
 use std::str::FromStr;
-use aoc23::{Coord, Direction, Grid, stdin_lines};
+use itertools::Itertools;
+use aoc23::{Direction, run, stdin_lines};
 use aoc23::Direction::*;
 
+#[derive(Copy, Clone)]
 struct Command {
     direction: Direction,
     distance: usize,
-    color: [u8; 3],
 }
 
-impl FromStr for Command {
+#[derive(Copy, Clone)]
+struct Line {
+    normal_command: Command,
+    color_command: Command,
+}
+
+impl FromStr for Line {
     type Err = ();
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -27,47 +34,50 @@ impl FromStr for Command {
             .ok_or(())?
             .strip_suffix(")")
             .ok_or(())?;
-        let color = u32::from_str_radix(color_string, 16).map_err(|_| ())?;
-        Ok(Command {
-            direction,
-            distance,
-            color: [(color >> 16 & 0xff) as u8, (color >> 8 & 0xff) as u8, (color & 0xff) as u8],
+        let color_distance = usize::from_str_radix(&color_string[0..5], 16).map_err(|_| ())?;
+        let color_direction = match &color_string[5..6] {
+            "0" => Ok(East),
+            "1" => Ok(South),
+            "2" => Ok(West),
+            "3" => Ok(North),
+            _ => Err(())
+        }?;
+        Ok(Line {
+            normal_command: Command {
+                direction,
+                distance,
+            },
+            color_command: Command {
+                direction: color_direction,
+                distance: color_distance,
+            },
         })
     }
 }
 
-fn find_limits<'a, I>(commands: I) -> (i32, i32) where I: Iterator<Item=&'a Command> {
-    let (low, high, _) = commands.fold((0, 0, 0), |(mut up, mut down, mut current), command| {
-        match command.direction {
-            North | West => {
-                current -= command.distance as i32;
-                if up > current {
-                    up = current
-                }
-                (up, down, current)
+fn calculate_area(commands: Vec<Command>) -> usize {
+    commands.into_iter()
+        .fold((0, 0), |(area, current_y), Command{ direction, distance }| {
+            let distance = distance as isize;
+            match direction {
+                East => (area - distance * current_y, current_y),
+                West => (area + distance * (current_y + 1), current_y),
+                North => (area, current_y - distance),
+                South => (area + distance, current_y + distance),
             }
-            South | East => {
-                current += command.distance as i32;
-                if down < current {
-                    down = current
-                }
-                (up, down, current)
-            }
-        }
-    });
-    (low, high)
+        }).0 as usize + 1
 }
 
 fn main() {
-    let commands = stdin_lines()
-        .map(|line| {
-            line.parse::<Command>()
-        })
-        .collect::<Result<Vec<_>, _>>()
-        .expect("Bad input");
-    let (up, down) = find_limits(commands.iter().filter(|&command| { command.direction == North || command.direction == South }));
-    let (left, right) = find_limits(commands.iter().filter(|&command| { command.direction == East || command.direction == West }));
-    let mut grid = Grid::new((right - left) as usize, (down - up) as usize);
-    let start = Coord::new(-left as usize, -right as usize);
-    grid[start] = 'S';
+    run!({
+        let commands = stdin_lines()
+            .map(|line| {
+                line.parse::<Line>()
+            })
+            .collect::<Result<Vec<_>, _>>()
+            .expect("Bad input");
+        let normal_commands = commands.iter().map(|Line { normal_command, color_command: _ }| *normal_command).collect_vec();
+        let color_commands = commands.iter().map(|Line { normal_command: _, color_command }| *color_command).collect_vec();
+        (calculate_area(normal_commands), calculate_area(color_commands))
+    })
 }
