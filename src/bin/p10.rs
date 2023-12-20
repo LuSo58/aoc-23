@@ -171,7 +171,6 @@ fn main() {
                                 'F' => (inside, Some(false), count),
                                 'L' => (inside, Some(true), count),
                                 '.' => (inside, None, count + inside as usize),
-                                ' ' => (inside, None, count),
                                 _ => panic!("Infallible"),
                             }
                         }

@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use std::fmt::{Debug, Display, Formatter};
 use std::io::stdin;
 use std::ops::{Index, IndexMut, Sub};
 use std::str::FromStr;
@@ -114,8 +114,11 @@ pub struct Grid<T> where T: Copy {
 
 impl<T> Grid<T> where T: Copy {
     pub fn new(width: usize, height: usize) -> Grid<T> where T: Default {
+        Grid::new_with_default(T::default(), width, height)
+    }
+    pub fn new_with_default(default: T, width: usize, height: usize) -> Grid<T> {
         Grid{
-            grid: vec![T::default(); width * height],
+            grid: vec![default; width * height],
             width,
             height,
         }
@@ -179,6 +182,18 @@ impl<T> Grid<T> where T: Copy {
     }
     pub fn row(&self, y: usize) -> &'_ [T] {
         &self.grid[y * self.width..(y + 1) * self.width]
+    }
+}
+
+impl<T> Display for Grid<T> where T: Copy + Display {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        for line in self.iter() {
+            for c in line {
+                write!(f, "{c}")?;
+            }
+            write!(f, "\n")?;
+        }
+        Ok(())
     }
 }
 

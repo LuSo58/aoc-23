@@ -102,15 +102,6 @@ fn tilt_horizontal(grid: &mut Grid<char>, west: bool) {
     }
 }
 
-#[allow(unused)]
-fn print_grid(grid: &Vec<Vec<char>>) {
-    grid.iter().for_each(|line| {
-        line.iter().for_each(|c| print!("{c}"));
-        println!()
-    });
-    println!()
-}
-
 fn main() {
     run!({
         let grid = Grid::from_input(stdin_lines(), some).expect("Bad input");
