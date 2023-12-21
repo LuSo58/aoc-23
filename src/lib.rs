@@ -25,6 +25,7 @@ pub enum Direction {
 }
 
 impl Direction {
+    pub const ALL: [Direction; 4] = [North, East, South, West];
     pub fn orthogonal(&self) -> (Self, Self) {
         match self {
             North | South => (East, West),
@@ -88,7 +89,7 @@ impl Coord {
 
 #[macro_export]
 macro_rules! xy {
-    ($x:expr, $y:expr) => { Coord::new($x, $y) };
+    ($x:expr, $y:expr) => { ::aoc23::Coord::new($x, $y) };
 }
 
 impl Sub for Coord {
