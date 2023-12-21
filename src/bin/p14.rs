@@ -1,5 +1,5 @@
 use num::range_step_inclusive;
-use aoc23::{Grid, Coord, run, some, stdin_lines, xy};
+use aoc23::{Grid, run, some, stdin_lines, xy};
 
 fn calculate_load(grid: &Grid<char>) -> usize {
     grid.iter()
