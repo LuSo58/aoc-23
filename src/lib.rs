@@ -72,7 +72,6 @@ impl Coord {
     pub fn new(x: usize, y: usize) -> Self {
         Self { x, y }
     }
-
     pub fn next(&self, direction: Direction) -> Option<Self> {
         match direction {
             North => if self.y > 0 { Some(Self::new(self.x, self.y - 1)) } else { None }
@@ -81,9 +80,45 @@ impl Coord {
             West => if self.x > 0 { Some(Self::new(self.x - 1, self.y)) } else { None }
         }
     }
-
     pub fn next_xy(x: usize, y: usize, direction: Direction) -> Option<Self> {
         Coord::new(x, y).next(direction)
+    }
+    pub fn direction_to(&self, other: &Self) -> Option<Direction> {
+        match self.sub_elements(other) {
+            (0, 0) => {
+                None
+            }
+            (0, y_off) => {
+                if y_off < 0 {
+                    Some(South)
+                } else {
+                    Some(North)
+                }
+            }
+            (x_off, 0) => {
+                if x_off < 0 {
+                    Some(East)
+                } else {
+                    Some(West)
+                }
+            }
+            _ => {
+                None
+            }
+        }
+    }
+    pub fn sub_elements(&self, other: &Self) -> (isize, isize) {
+        (self.x as isize - other.x as isize, self.y as isize - other.y as isize)
+    }
+    pub fn orthogonal_neighbours(&self) -> [Coord; 4] {
+        Direction::ALL.into_iter()
+            .map(|direction| {
+                self.next(direction)
+                    .expect("Neighbour is in negative index")
+            })
+            .collect_vec()
+            .try_into()
+            .expect("Infallible")
     }
 }
 
@@ -166,6 +201,12 @@ impl<T> Grid<T> where T: Copy {
         } else {
             None
         }
+    }
+    pub fn get_coord(&self, coord: &Coord) -> Option<&T> {
+        self.get(coord.x, coord.y)
+    }
+    pub fn get_mut_coord(&mut self, coord: &Coord) -> Option<&mut T> {
+        self.get_mut(coord.x, coord.y)
     }
     pub fn width(&self) -> usize {
         self.width
